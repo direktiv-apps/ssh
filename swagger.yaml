@@ -1,18 +1,21 @@
 swagger: "2.0"
 info:
-  description: Description for ssh
+  description: Secure Shell from Direktiv
   title: ssh
   version: "1.0"
   x-direktiv-meta:
-    container: direktiv/ssh
-    maintainer: 
-    issues:
-    url:  
+    container: gcr.io/direktiv/functions/ssh
+    maintainer: |-
+      [direktiv.io](https://www.direktiv.io) 
+    issues: https://github.com/direktiv-apps/ssh/issues
+    url: https://github.com/direktiv-apps/ssh  
     categories:
-    - unknown
+    - network
     license: |-
       [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0)
-    long-description: This is a longer description for the application ssh
+    long-description: >-
+      This function allows to start a secure shell (SSH) with a remote server. It supprots username/passname as well as SSH key authentication. 
+      To sue SSH key authentication the certificate has to be provided by a secret useing the `files` input. The function can execute multiple commands.
 consumes:
 - application/json
 produces:
@@ -38,12 +41,14 @@ paths:
         - name: Direktiv-ActionID
           in: header
           type: string
+          default: development
           description: |
             direktiv action id is an UUID. 
             For development it can be set to 'development'
         - name: Direktiv-TempDir
           in: header
           type: string
+          default: /tmp
           description: |
             direktiv temp dir is the working directory for that request
             For development it can be set to e.g. '/tmp'
@@ -51,22 +56,50 @@ paths:
           in: body
           schema:
             type: object
+            required: ["host", "auth"]
             properties:
               files:
                 type: array
                 items:
                   $ref: '#/definitions/direktivFile'
                 description: File to create before running commands.
+                default: []
+              host:
+                type: object
+                required: ["name", "auth"]
+                properties:
+                  name:
+                    type: string
+                    description: Hostname or IP to SSH to
+                  port: 
+                    type: integer
+                    description: SSH port
+                    default: 22
+                  verbose:
+                    type: boolean
+                    description: Enables debug output on the connection
+              auth:
+                type: object
+                required: ["username"]
+                properties:
+                  username:
+                    type: string
+                    description: Username for authentication
+                  password:
+                    type: string
+                    description: Password if username/password authentication
+                  certificate:
+                    type: string
+                    description: Path to certificate for SSH key based authentication
               commands:
                 type: array
-                description: Array of commands.
+                description: Array of SSH commands.
                 items:
                   type: object
                   properties:
                     command:
                       type: string
                       description: Command to run
-                      example: ssh user@192.168.1.1
                     silent: 
                       type: boolean
                       description: If set to false the command will not print output to logs.
@@ -77,43 +110,115 @@ paths:
                       default: true
                     continue: 
                       type: boolean
+                      description: Stops excecution if command fails, otherwise proceeds with next command 
+                default: 
+                - command: echo Hello
       # direktiv code generation is configured here
       x-direktiv-function: |-
         functions:
-          - id: ssh
-            image: direktiv/ssh:1.0
-            type: knative-workflow
+        - id: ssh
+          image: gcr.io/direktiv/functions/ssh:1.0
+          type: knative-workflow
       x-direktiv-examples:
-        - title: Basic
+        - title: Password authentication
           content: |-
-            - id: req
-                 type: action
-                 action:
-                   function: ssh
+            - id: ssh 
+              type: action
+              action:
+                function: ssh
+                secrets: ["sshpwd"]
+                input: 
+                  host:
+                    name: 10.100.6.16
+                    port: 2022
+                    verbose: true
+                  auth:
+                    username: direktiv
+                    password: jq(.secrets.sshpwd)
+                  commands:
+                  - command: date
+              catch:
+              - error: "*"
+        - title: SSH key authentication
+          content: |-
+            - id: ssh 
+              type: action
+              action:
+                function: ssh
+                secrets: ["sshcert"]
+                input: 
+                  files:
+                  - name: cert
+                    data: |
+                      jq(.secrets.sshcert)
+                    mode: "0400"
+                  host:
+                    name: 10.100.6.16
+                  auth:
+                    username: direktiv
+                    certificate: jq(.secrets.sshcert)
+                  commands:
+                  - command: date
+              catch:
+              - error: "*"
+      x-direktiv-secrets:
+        - name: sshcert
+          description: Certificate to use for SSH key authentication
+        - name: sshpwd
+          description: Password for username / password authentication
       x-direktiv:  
         cmds:
         - action: foreach
           loop: .Commands
-          exec: '{{ .Item.Command }}'
+          exec: |-
+            {{- if .Body.Auth.Password }}
+            sshpass -e
+            {{ end }}
+            ssh 
+            {{ if .Body.Host.Verbose }}
+            -vv
+            {{ end }}
+            {{ if .Body.Auth.Certificate }}
+            -i /cert 
+            {{ end }}
+            {{- .Body.Auth.Username }}@{{ .Body.Host.Name }} 
+            -o StrictHostKeyChecking=accept-new 
+            {{ if .Body.Host.Port }} -p {{ .Body.Host.Port }}{{ end }} 
+            '{{- .Item.Command }}'
           silent: '{{ .Item.Silent }}'
           print: '{{ .Item.Print }}'
           continue: '{{ .Item.Continue }}'
-        # output: |
-        #   {
-        #     "greeting": "{{ index (index . 0) "result" }}"
-        #   }
+          env:  ["SSHPASS={{ .Body.Auth.Password }}"]
+        output: |
+          {
+            "ssh": {{ index . 0 | toJson }}
+          }
       x-direktiv-errors:
         io.direktiv.command.error: Command execution failed
         io.direktiv.output.error: Template error for output generation of the service
         io.direktiv.ri.error: Can not create information object from request
       responses:
         200:
-          description: nice greeting
+          description: List of executed SSH commands.
+          examples:
+            ssh:
+            - result: "Sa 1. Okt 13:25:38 CEST 2021"
+              success: true
           schema:
             type: object
-            additionalProperties: {}
-            example: 
-              greeting: Hello YourName
+            properties:
+              ssh:
+                type: array
+                items:
+                  type: object
+                  required:
+                  - success
+                  - result
+                  properties:
+                    success:
+                      type: boolean
+                    result:
+                      additionalProperties: {}
         default:
           description: generic error response
           headers:

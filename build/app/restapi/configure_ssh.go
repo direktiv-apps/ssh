@@ -14,10 +14,10 @@ import (
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/runtime/middleware"
 
-	"ssh/restapi/operations"
+	"app/restapi/operations"
 )
 
-//go:generate swagger generate server --target ../../app --name SSH --spec ../swagger.yaml --principal interface{}
+//go:generate swagger generate server --target ../../app --name SSH --spec ../../../swagger.yaml --template-dir /home/jensg/go/src/github.com/direktiv-apps/ssh/build/templates --principal interface{}
 
 func configureFlags(api *operations.SSHAPI) {
 	// api.CommandLineOptionsGroups = []swag.CommandLineOptionsGroup{ ... }

@@ -51,7 +51,7 @@ func NewSSHAPI(spec *loads.Document) *SSHAPI {
 	}
 }
 
-/*SSHAPI Description for ssh */
+/*SSHAPI Secure Shell from Direktiv */
 type SSHAPI struct {
 	spec            *loads.Document
 	context         *middleware.Context

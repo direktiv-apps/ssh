@@ -2,7 +2,7 @@
 
 // Package restapi ssh
 //
-//  Description for ssh
+//  Secure Shell from Direktiv
 //  Schemes:
 //    http
 //  Host: localhost
