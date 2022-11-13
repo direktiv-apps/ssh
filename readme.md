@@ -61,7 +61,7 @@ functions:
         name: 10.100.6.16
       auth:
         username: direktiv
-        certificate: jq(.secrets.sshcert)
+        certificate: cert
       commands:
       - command: date
   catch:

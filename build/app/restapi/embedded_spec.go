@@ -216,7 +216,7 @@ func init() {
               "env": [
                 "SSHPASS={{ .Body.Auth.Password }}"
               ],
-              "exec": "{{- if .Body.Auth.Password }}\nsshpass -e\n{{ end }}\nssh \n{{ if .Body.Host.Verbose }}\n-vv\n{{ end }}\n{{ if .Body.Auth.Certificate }}\n-i /cert \n{{ end }}\n{{- .Body.Auth.Username }}@{{ .Body.Host.Name }} \n-o StrictHostKeyChecking=accept-new \n{{ if .Body.Host.Port }} -p {{ .Body.Host.Port }}{{ end }} \n'{{- .Item.Command }}'",
+              "exec": "{{- if .Body.Auth.Password }}\nsshpass -e\n{{ end }}\nssh \n{{ if .Body.Host.Verbose }}\n-vv\n{{ end }}\n{{ if .Body.Auth.Certificate }}\n-i {{ .Body.Auth.Certificate }} \n{{ end }}\n{{- .Body.Auth.Username }}@{{ .Body.Host.Name }} \n-o StrictHostKeyChecking=accept-new \n{{ if .Body.Host.Port }} -p {{ .Body.Host.Port }}{{ end }} \n'{{- .Item.Command }}'",
               "loop": ".Commands",
               "print": "{{ .Item.Print }}",
               "silent": "{{ .Item.Silent }}"
@@ -235,7 +235,7 @@ func init() {
             "title": "Password authentication"
           },
           {
-            "content": "- id: ssh \n  type: action\n  action:\n    function: ssh\n    secrets: [\"sshcert\"]\n    input: \n      files:\n      - name: cert\n        data: |\n          jq(.secrets.sshcert)\n        mode: \"0400\"\n      host:\n        name: 10.100.6.16\n      auth:\n        username: direktiv\n        certificate: jq(.secrets.sshcert)\n      commands:\n      - command: date\n  catch:\n  - error: \"*\"",
+            "content": "- id: ssh \n  type: action\n  action:\n    function: ssh\n    secrets: [\"sshcert\"]\n    input: \n      files:\n      - name: cert\n        data: |\n          jq(.secrets.sshcert)\n        mode: \"0400\"\n      host:\n        name: 10.100.6.16\n      auth:\n        username: direktiv\n        certificate: cert\n      commands:\n      - command: date\n  catch:\n  - error: \"*\"",
             "title": "SSH key authentication"
           }
         ],
@@ -389,7 +389,7 @@ func init() {
               "env": [
                 "SSHPASS={{ .Body.Auth.Password }}"
               ],
-              "exec": "{{- if .Body.Auth.Password }}\nsshpass -e\n{{ end }}\nssh \n{{ if .Body.Host.Verbose }}\n-vv\n{{ end }}\n{{ if .Body.Auth.Certificate }}\n-i /cert \n{{ end }}\n{{- .Body.Auth.Username }}@{{ .Body.Host.Name }} \n-o StrictHostKeyChecking=accept-new \n{{ if .Body.Host.Port }} -p {{ .Body.Host.Port }}{{ end }} \n'{{- .Item.Command }}'",
+              "exec": "{{- if .Body.Auth.Password }}\nsshpass -e\n{{ end }}\nssh \n{{ if .Body.Host.Verbose }}\n-vv\n{{ end }}\n{{ if .Body.Auth.Certificate }}\n-i {{ .Body.Auth.Certificate }} \n{{ end }}\n{{- .Body.Auth.Username }}@{{ .Body.Host.Name }} \n-o StrictHostKeyChecking=accept-new \n{{ if .Body.Host.Port }} -p {{ .Body.Host.Port }}{{ end }} \n'{{- .Item.Command }}'",
               "loop": ".Commands",
               "print": "{{ .Item.Print }}",
               "silent": "{{ .Item.Silent }}"
@@ -408,7 +408,7 @@ func init() {
             "title": "Password authentication"
           },
           {
-            "content": "- id: ssh \n  type: action\n  action:\n    function: ssh\n    secrets: [\"sshcert\"]\n    input: \n      files:\n      - name: cert\n        data: |\n          jq(.secrets.sshcert)\n        mode: \"0400\"\n      host:\n        name: 10.100.6.16\n      auth:\n        username: direktiv\n        certificate: jq(.secrets.sshcert)\n      commands:\n      - command: date\n  catch:\n  - error: \"*\"",
+            "content": "- id: ssh \n  type: action\n  action:\n    function: ssh\n    secrets: [\"sshcert\"]\n    input: \n      files:\n      - name: cert\n        data: |\n          jq(.secrets.sshcert)\n        mode: \"0400\"\n      host:\n        name: 10.100.6.16\n      auth:\n        username: direktiv\n        certificate: cert\n      commands:\n      - command: date\n  catch:\n  - error: \"*\"",
             "title": "SSH key authentication"
           }
         ],

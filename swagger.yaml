@@ -156,7 +156,7 @@ paths:
                     name: 10.100.6.16
                   auth:
                     username: direktiv
-                    certificate: jq(.secrets.sshcert)
+                    certificate: cert
                   commands:
                   - command: date
               catch:
@@ -179,7 +179,7 @@ paths:
             -vv
             {{ end }}
             {{ if .Body.Auth.Certificate }}
-            -i /cert 
+            -i {{ .Body.Auth.Certificate }} 
             {{ end }}
             {{- .Body.Auth.Username }}@{{ .Body.Host.Name }} 
             -o StrictHostKeyChecking=accept-new 

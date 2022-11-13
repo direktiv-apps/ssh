@@ -113,7 +113,7 @@ func PostDirektivHandle(params PostParams) middleware.Responder {
 	s, err := templateString(`{
   "ssh": {{ index . 0 | toJson }}
 }
-`, responses)
+`, responses, ri.Dir())
 	if err != nil {
 		return generateError(outErr, err)
 	}
@@ -163,12 +163,12 @@ ssh
 -vv
 {{ end }}
 {{ if .Body.Auth.Certificate }}
--i /cert 
+-i {{ .Body.Auth.Certificate }} 
 {{ end }}
 {{- .Body.Auth.Username }}@{{ .Body.Host.Name }} 
 -o StrictHostKeyChecking=accept-new 
 {{ if .Body.Host.Port }} -p {{ .Body.Host.Port }}{{ end }} 
-'{{- .Item.Command }}'`, ls)
+'{{- .Item.Command }}'`, ls, params.DirektivDir)
 		if err != nil {
 			ir := make(map[string]interface{})
 			ir[successKey] = false
@@ -183,10 +183,20 @@ ssh
 		output := ""
 
 		envs := []string{}
-		env0, _ := templateString(`SSHPASS={{ .Body.Auth.Password }}`, ls)
+		env0, _ := templateString(`SSHPASS={{ .Body.Auth.Password }}`, ls, params.DirektivDir)
 		envs = append(envs, env0)
 
-		r, err := runCmd(ctx, cmd, envs, output, silent, print, ri)
+		workingDir, err := templateString(``,
+			ls, params.DirektivDir)
+		if err != nil {
+			ir := make(map[string]interface{})
+			ir[successKey] = false
+			ir[resultKey] = err.Error()
+			cmds = append(cmds, ir)
+			continue
+		}
+
+		r, err := runCmd(ctx, cmd, envs, output, silent, print, ri, workingDir)
 		if err != nil {
 			ir := make(map[string]interface{})
 			ir[successKey] = false
